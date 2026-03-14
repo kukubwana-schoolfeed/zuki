@@ -31,7 +31,12 @@ export default function SignInPage() {
     const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
 
     if (signInError) {
-      setError(signInError.message)
+      if (signInError.message.toLowerCase().includes('invalid login credentials') ||
+          signInError.message.toLowerCase().includes('email not confirmed')) {
+        setError('Invalid email or password. If you recently signed up, your account may still be pending admin approval — you\'ll receive an email once approved.')
+      } else {
+        setError(signInError.message)
+      }
       setLoading(false)
       return
     }

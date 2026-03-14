@@ -41,6 +41,8 @@ export default async function AdminBakeryDetail({ params }: PageProps) {
     try {
       const { data: ownerAuth } = await db.auth.admin.getUserById(bakery.owner_id)
       if (ownerAuth?.user?.email) {
+        // Confirm the baker's email so they can sign in with password auth
+        await db.auth.admin.updateUserById(bakery.owner_id, { email_confirm: true })
         await sendBakeryApprovedEmail(ownerAuth.user.email, bakery.name, bakery.slug)
       }
     } catch {}
