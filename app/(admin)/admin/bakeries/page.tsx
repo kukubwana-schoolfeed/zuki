@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { ChevronRight } from 'lucide-react'
@@ -9,7 +9,7 @@ interface PageProps {
 }
 
 export default async function AdminBakeriesPage({ searchParams }: PageProps) {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const statusFilter = searchParams.status as BakeryStatus | undefined
 
   let query = supabase

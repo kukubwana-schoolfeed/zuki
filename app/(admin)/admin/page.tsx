@@ -1,11 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
 import { formatZMW } from '@/lib/utils'
 import { format } from 'date-fns'
 import { Store, Clock, ShoppingBag, TrendingUp, ChevronRight, AlertTriangle } from 'lucide-react'
 
 export default async function AdminDashboard() {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const [bakeryRes, orderRes, pendingRes, recentRes] = await Promise.all([
     supabase.from('bakeries').select('id, status'),

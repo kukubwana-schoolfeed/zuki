@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -11,9 +12,9 @@ interface PageProps {
 }
 
 export default async function AdminBakeryDetail({ params }: PageProps) {
-  const supabase = await createClient()
+  const adminSupabase = createAdminClient()
 
-  const { data: bakery } = await supabase
+  const { data: bakery } = await adminSupabase
     .from('bakeries')
     .select('*, profiles:owner_id(full_name, phone)')
     .eq('id', params.id)
@@ -22,8 +23,8 @@ export default async function AdminBakeryDetail({ params }: PageProps) {
   if (!bakery) notFound()
 
   const [ordersRes, reviewsRes] = await Promise.all([
-    supabase.from('orders').select('id, status, total_price_zmw', { count: 'exact' }).eq('bakery_id', params.id),
-    supabase.from('reviews').select('rating').eq('bakery_id', params.id),
+    adminSupabase.from('orders').select('id, status, total_price_zmw', { count: 'exact' }).eq('bakery_id', params.id),
+    adminSupabase.from('reviews').select('rating').eq('bakery_id', params.id),
   ])
 
   const totalRevenue = ordersRes.data?.filter(o => o.status !== 'cancelled')
@@ -34,10 +35,11 @@ export default async function AdminBakeryDetail({ params }: PageProps) {
 
   async function approveBakery() {
     'use server'
-    const supabase = await createClient()
-    await supabase.from('bakeries').update({ status: 'approved' }).eq('id', params.id)
+    const { createAdminClient: adminClient } = await import('@/lib/supabase/admin')
+    const db = adminClient()
+    await db.from('bakeries').update({ status: 'approved' }).eq('id', params.id)
     try {
-      const { data: ownerAuth } = await supabase.auth.admin.getUserById(bakery.owner_id)
+      const { data: ownerAuth } = await db.auth.admin.getUserById(bakery.owner_id)
       if (ownerAuth?.user?.email) {
         await sendBakeryApprovedEmail(ownerAuth.user.email, bakery.name, bakery.slug)
       }
@@ -47,15 +49,17 @@ export default async function AdminBakeryDetail({ params }: PageProps) {
 
   async function suspendBakery() {
     'use server'
-    const supabase = await createClient()
-    await supabase.from('bakeries').update({ status: 'suspended' }).eq('id', params.id)
+    const { createAdminClient: adminClient } = await import('@/lib/supabase/admin')
+    const db = adminClient()
+    await db.from('bakeries').update({ status: 'suspended' }).eq('id', params.id)
     redirect('/admin/bakeries')
   }
 
   async function reactivateBakery() {
     'use server'
-    const supabase = await createClient()
-    await supabase.from('bakeries').update({ status: 'approved' }).eq('id', params.id)
+    const { createAdminClient: adminClient } = await import('@/lib/supabase/admin')
+    const db = adminClient()
+    await db.from('bakeries').update({ status: 'approved' }).eq('id', params.id)
     redirect('/admin/bakeries')
   }
 

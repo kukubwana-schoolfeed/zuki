@@ -2,16 +2,13 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { createClient } from '@/lib/supabase/client'
 import { ZukiButton } from '@/components/zuki/ZukiButton'
-import { generateSlug } from '@/lib/utils'
 import { Check, ArrowRight, ArrowLeft } from 'lucide-react'
 
 const steps = ['Bakery Profile', 'Business Settings', 'Payment Methods']
 
 export default function BakerOnboarding() {
   const router = useRouter()
-  const supabase = createClient()
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -53,25 +50,27 @@ export default function BakerOnboarding() {
   async function submit() {
     setLoading(true)
     setError('')
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
 
-    const slug = generateSlug(form.name)
+    try {
+      const res = await fetch('/api/bakeries/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
 
-    const { error: insertError } = await supabase.from('bakeries').insert({
-      owner_id: user.id,
-      ...form,
-      slug,
-      status: 'pending',
-    })
+      const data = await res.json()
 
-    if (insertError) {
-      setError(insertError.message)
+      if (!res.ok) {
+        setError(data.error || 'Failed to create bakery. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      router.push('/baker/pending')
+    } catch {
+      setError('Network error. Please check your connection and try again.')
       setLoading(false)
-      return
     }
-
-    router.push('/baker/pending')
   }
 
   return (
